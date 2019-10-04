@@ -12,7 +12,6 @@
 
 #include "mpsse.h"
 #include "support.h"
-#include "config.h"
 
 /* List of known FT2232-based devices */
 struct vid_pid supported_devices[] = {

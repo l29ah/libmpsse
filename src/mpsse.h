@@ -2,6 +2,7 @@
 #define _LIBMPSSE_H_
 
 #include <stdint.h>
+#include "config.h"
 
 #if HAVE_LIBFTDI1 == 1
 #include <libftdi1/ftdi.h>
