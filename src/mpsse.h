@@ -3,12 +3,6 @@
 
 #include <stdint.h>
 
-#if HAVE_LIBFTDI1 == 1
-#include <libftdi1/ftdi.h>
-#else
-#include <ftdi.h>
-#endif
-
 #define MPSSE_OK		0
 #define MPSSE_FAIL		-1
 
@@ -39,14 +33,17 @@
 
 #define NULL_CONTEXT_ERROR_MSG	"NULL MPSSE context pointer!"
 
-/* FTDI interfaces */
+/* FTDI interfaces
+ * The values in this enum match those defined in ftdi.h and libftdi1/ftdi.h,
+ * do not modify them.
+ */
 enum interface
 {
-	IFACE_ANY	= INTERFACE_ANY,
-	IFACE_A 	= INTERFACE_A,
-	IFACE_B		= INTERFACE_B,
-	IFACE_C		= INTERFACE_C,
-	IFACE_D		= INTERFACE_D
+	IFACE_ANY,
+	IFACE_A,
+	IFACE_B,
+	IFACE_C,
+	IFACE_D,
 };
 
 /* Common clock rates */
@@ -148,7 +145,7 @@ struct vid_pid
 struct mpsse_context
 {
 	char *description;
-	struct ftdi_context ftdi;
+	struct ftdi_context* ftdi;
 	enum modes mode;
 	enum low_bits_status status;
 	int flush_after_read;
