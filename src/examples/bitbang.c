@@ -1,7 +1,7 @@
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpsse.h>
+#include <unistd.h>
 
 int main(void)
 {
@@ -17,7 +17,7 @@ int main(void)
 			PinHigh(io, 0);
 			printf("Pin 0 is: %d\n", PinState(io, 0, -1));
 			sleep(1);
-			
+
 			PinLow(io, 0);
 			printf("Pin 0 is: %d\n", PinState(io, 0, -1));
 			sleep(1);

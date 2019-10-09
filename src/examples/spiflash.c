@@ -1,4 +1,3 @@
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpsse.h>
@@ -13,17 +12,17 @@ int main(void)
 	char *data = NULL, *data1 = NULL;
 	int retval = EXIT_FAILURE;
 	struct mpsse_context *flash = NULL;
-	
+
 	if((flash = MPSSE(SPI0, TWELVE_MHZ, MSB)) != NULL && flash->open)
 	{
 		printf("%s initialized at %dHz (SPI mode 0)\n", GetDescription(flash), GetClock(flash));
-		
+
 		Start(flash);
 		Write(flash, RCMD, sizeof(RCMD) - 1);
 		data = Read(flash, SIZE);
 		data1 = Read(flash, SIZE);
 		Stop(flash);
-		
+
 		if(data)
 		{
 			fp = fopen(FOUT, "wb");
@@ -32,7 +31,7 @@ int main(void)
 				fwrite(data, 1, SIZE, fp);
 				fwrite(data1, 1, SIZE, fp);
 				fclose(fp);
-				
+
 				printf("Dumped %d bytes to %s\n", SIZE, FOUT);
 				retval = EXIT_SUCCESS;
 			}
