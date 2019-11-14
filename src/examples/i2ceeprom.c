@@ -1,7 +1,6 @@
-/* 
+/*
  * Example code to read the contents of an I2C EEPROM chip.
  */
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpsse.h>
@@ -21,8 +20,8 @@ int main(void)
 	if((eeprom = MPSSE(I2C, FOUR_HUNDRED_KHZ, MSB)) != NULL && eeprom->open)
 	{
 		printf("%s initialized at %dHz (I2C)\n", GetDescription(eeprom), GetClock(eeprom));
-	
-		/* Write the EEPROM start address */	
+
+		/* Write the EEPROM start address */
 		Start(eeprom);
 		Write(eeprom, WCMD, sizeof(WCMD) - 1);
 
@@ -50,7 +49,7 @@ int main(void)
 
 					free(data);
 				}
-	
+
 				/* Tell libmpsse to send NACKs after reading data */
 				SendNacks(eeprom);
 

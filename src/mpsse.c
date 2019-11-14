@@ -11,6 +11,12 @@
 #include <time.h>
 
 #include "config.h"
+#if HAVE_LIBFTDI1 == 1
+#include <libftdi1/ftdi.h>
+#else
+#include <ftdi.h>
+#endif
+
 #include "mpsse.h"
 #include "support.h"
 
@@ -35,8 +41,8 @@ struct vid_pid supported_devices[] = {
 /*
  * Opens and initializes the first FTDI device found.
  *
- * @mode      - Mode to open the device in. One of enum modes.
- * @freq      - Clock frequency to use for the specified mode.
+ * @mode	  - Mode to open the device in. One of enum modes.
+ * @freq	  - Clock frequency to use for the specified mode.
  * @endianess - Specifies how data is clocked in/out (MSB, LSB).
  *
  * Returns a pointer to an MPSSE context structure.
@@ -72,14 +78,14 @@ struct mpsse_context *MPSSE(enum modes mode, int freq, int endianess)
 /*
  * Open device by VID/PID
  *
- * @vid         - Device vendor ID.
- * @pid         - Device product ID.
- * @mode        - MPSSE mode, one of enum modes.
- * @freq        - Clock frequency to use for the specified mode.
- * @endianess   - Specifies how data is clocked in/out (MSB, LSB).
- * @interface   - FTDI interface to use (IFACE_A - IFACE_D).
+ * @vid			- Device vendor ID.
+ * @pid			- Device product ID.
+ * @mode		- MPSSE mode, one of enum modes.
+ * @freq		- Clock frequency to use for the specified mode.
+ * @endianess	- Specifies how data is clocked in/out (MSB, LSB).
+ * @interface	- FTDI interface to use (IFACE_A - IFACE_D).
  * @description - Device product description (set to NULL if not needed).
- * @serial      - Device serial number (set to NULL if not needed).
+ * @serial		- Device serial number (set to NULL if not needed).
  *
  * Returns a pointer to an MPSSE context structure.
  * On success, mpsse->open will be set to 1.
@@ -93,15 +99,15 @@ struct mpsse_context *Open(int vid, int pid, enum modes mode, int freq, int endi
 /*
  * Open device by VID/PID/index
  *
- * @vid         - Device vendor ID.
- * @pid         - Device product ID.
- * @mode        - MPSSE mode, one of enum modes.
- * @freq        - Clock frequency to use for the specified mode.
- * @endianess   - Specifies how data is clocked in/out (MSB, LSB).
- * @interface   - FTDI interface to use (IFACE_A - IFACE_D).
+ * @vid			- Device vendor ID.
+ * @pid			- Device product ID.
+ * @mode		- MPSSE mode, one of enum modes.
+ * @freq		- Clock frequency to use for the specified mode.
+ * @endianess	- Specifies how data is clocked in/out (MSB, LSB).
+ * @interface	- FTDI interface to use (IFACE_A - IFACE_D).
  * @description - Device product description (set to NULL if not needed).
- * @serial      - Device serial number (set to NULL if not needed).
- * @index       - Device index (set to 0 if not needed).
+ * @serial		- Device serial number (set to NULL if not needed).
+ * @index		- Device index (set to 0 if not needed).
  *
  * Returns a pointer to an MPSSE context structure.
  * On success, mpsse->open will be set to 1.
@@ -116,18 +122,19 @@ struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int
 	if(mpsse)
 	{
 		memset(mpsse, 0, sizeof(struct mpsse_context));
+		mpsse->ftdi = (struct ftdi_context*)malloc(sizeof(struct ftdi_context));
 
 		/* Legacy; flushing is no longer needed, so disable it by default. */
 		FlushAfterRead(mpsse, 1);
 
 		/* ftdilib initialization */
-		if(ftdi_init(&mpsse->ftdi) == 0)
+		if(ftdi_init(mpsse->ftdi) == 0)
 		{
 			/* Set the FTDI interface  */
-			ftdi_set_interface(&mpsse->ftdi, interface);
+			ftdi_set_interface(mpsse->ftdi, interface);
 
 			/* Open the specified device */
-			if(ftdi_usb_open_desc_index(&mpsse->ftdi, vid, pid, description, serial, index) == 0)
+			if(ftdi_usb_open_desc_index(mpsse->ftdi, vid, pid, description, serial, index) == 0)
 			{
 				mpsse->mode = mode;
 				mpsse->vid = vid;
@@ -145,11 +152,11 @@ struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int
 					mpsse->xsize = SPI_RW_SIZE;
 				}
 
-				status |= ftdi_usb_reset(&mpsse->ftdi);
-				status |= ftdi_set_latency_timer(&mpsse->ftdi, LATENCY_MS);
-				status |= ftdi_write_data_set_chunksize(&mpsse->ftdi, CHUNK_SIZE);
-				status |= ftdi_read_data_set_chunksize(&mpsse->ftdi, CHUNK_SIZE);
-				status |= ftdi_set_bitmode(&mpsse->ftdi, 0, BITMODE_RESET);
+				status |= ftdi_usb_reset(mpsse->ftdi);
+				status |= ftdi_set_latency_timer(mpsse->ftdi, LATENCY_MS);
+				status |= ftdi_write_data_set_chunksize(mpsse->ftdi, CHUNK_SIZE);
+				status |= ftdi_read_data_set_chunksize(mpsse->ftdi, CHUNK_SIZE);
+				status |= ftdi_set_bitmode(mpsse->ftdi, 0, BITMODE_RESET);
 
 				if(status == 0)
 				{
@@ -158,7 +165,7 @@ struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int
 
 					if(mpsse->mode != BITBANG)
 					{
-						ftdi_set_bitmode(&mpsse->ftdi, 0, BITMODE_MPSSE);
+						ftdi_set_bitmode(mpsse->ftdi, 0, BITMODE_MPSSE);
 
 						if(SetClock(mpsse, freq) == MPSSE_OK)
 						{
@@ -176,14 +183,14 @@ struct mpsse_context *OpenIndex(int vid, int pid, enum modes mode, int freq, int
 								 * Not all FTDI chips support all the commands that SetMode may have sent.
 								 * This clears out any errors from unsupported commands that might have been sent during set up.
 								 */
-								ftdi_usb_purge_buffers(&mpsse->ftdi);
+								ftdi_usb_purge_buffers(mpsse->ftdi);
 							}
 						}
 					}
 					else
 					{
 						/* Skip the setup functions if we're just operating in BITBANG mode */
-						if(ftdi_set_bitmode(&mpsse->ftdi, 0xFF, BITMODE_BITBANG) == 0)
+						if(ftdi_set_bitmode(mpsse->ftdi, 0xFF, BITMODE_BITBANG) == 0)
 						{
 							mpsse->open = 1;
 						}
@@ -209,11 +216,12 @@ void Close(struct mpsse_context *mpsse)
 	{
 		if(mpsse->open)
 		{
-			ftdi_set_bitmode(&mpsse->ftdi, 0, BITMODE_RESET);
-			ftdi_usb_close(&mpsse->ftdi);
-			ftdi_deinit(&mpsse->ftdi);
+			ftdi_set_bitmode(mpsse->ftdi, 0, BITMODE_RESET);
+			ftdi_usb_close(mpsse->ftdi);
+			ftdi_deinit(mpsse->ftdi);
 		}
 
+		free(mpsse->ftdi);
 		free(mpsse);
 		mpsse = NULL;
 	}
@@ -248,7 +256,7 @@ void EnableBitmode(struct mpsse_context *mpsse, int tf)
 /*
  * Sets the appropriate transmit and receive commands based on the requested mode and byte order.
  *
- * @mpsse     - MPSSE context pointer.
+ * @mpsse	  - MPSSE context pointer.
  * @endianess - MPSSE_MSB or MPSSE_LSB.
  *
  * Returns MPSSE_OK on success.
@@ -264,8 +272,8 @@ int SetMode(struct mpsse_context *mpsse, int endianess)
 	if(mpsse)
 	{
 		/* Read and write commands need to include endianess */
-		mpsse->tx   = MPSSE_DO_WRITE | endianess;
-		mpsse->rx   = MPSSE_DO_READ  | endianess;
+		mpsse->tx	= MPSSE_DO_WRITE | endianess;
+		mpsse->rx	= MPSSE_DO_READ  | endianess;
 		mpsse->txrx = MPSSE_DO_WRITE | MPSSE_DO_READ | endianess;
 
 		/* Clock, data out, chip select pins are outputs; all others are inputs. */
@@ -278,7 +286,7 @@ int SetMode(struct mpsse_context *mpsse, int endianess)
 		mpsse->pstart &= ~CS;
 
 		/* Disable FTDI internal loopback */
-	        SetLoopback(mpsse, 0);
+			SetLoopback(mpsse, 0);
 
 		/* Send ACKs by default */
 		SetAck(mpsse, ACK);
@@ -372,9 +380,9 @@ int SetMode(struct mpsse_context *mpsse, int endianess)
 			mpsse->trish = 0xFF;
 			mpsse->gpioh = 0x00;
 
-	                buf[i++] = SET_BITS_HIGH;
-	                buf[i++] = mpsse->gpioh;
-	                buf[i++] = mpsse->trish;
+					buf[i++] = SET_BITS_HIGH;
+					buf[i++] = mpsse->gpioh;
+					buf[i++] = mpsse->trish;
 
 			retval = raw_write(mpsse, buf, i);
 		}
@@ -454,7 +462,7 @@ const char *ErrorString(struct mpsse_context *mpsse)
 {
 	if(mpsse != NULL)
 	{
-        	return ftdi_get_error_string(&mpsse->ftdi);
+			return ftdi_get_error_string(mpsse->ftdi);
 	}
 
 	return NULL_CONTEXT_ERROR_MSG;
@@ -603,7 +611,7 @@ void SetCSIdle(struct mpsse_context *mpsse, int idle)
  * Flushing is disable by default.
  *
  * @mpsse - MPSSE context pointer.
- * @tf    - Set to 1 to enable flushing, or 0 to disable flushing.
+ * @tf	  - Set to 1 to enable flushing, or 0 to disable flushing.
  *
  * Returns void.
  */
@@ -647,9 +655,9 @@ int Start(struct mpsse_context *mpsse)
 		 * data to prevent unintenteded clock glitches from the FT2232.
 		 */
 		if(mpsse->mode == SPI3)
-	        {
+			{
 			status |= set_bits_low(mpsse, (mpsse->pstart & ~SK));
-	        }
+			}
 		/*
 		 * Hackish work around to properly support SPI mode 1.
 		 * SPI1 clock idles low, but needs to be set high before sending out
@@ -1170,7 +1178,7 @@ int PinLow(struct mpsse_context *mpsse, int pin)
 /*
  * Sets the input/output direction of all pins. For use in BITBANG mode only.
  *
- * @mpsse     - MPSSE context pointer.
+ * @mpsse	  - MPSSE context pointer.
  * @direction - Byte indicating input/output direction of each bit.  1 is out.
  *
  * Returns MPSSE_OK if direction could be set, MPSSE_FAIL otherwise.
@@ -1183,8 +1191,8 @@ int SetDirection(struct mpsse_context *mpsse, uint8_t direction)
 	{
 		if(mpsse->mode == BITBANG)
 		{
-			if(ftdi_set_bitmode(&mpsse->ftdi, direction, BITMODE_BITBANG) == 0)
-                	{
+			if(ftdi_set_bitmode(mpsse->ftdi, direction, BITMODE_BITBANG) == 0)
+					{
 				retval = MPSSE_OK;
 			}
 		}
@@ -1209,7 +1217,7 @@ int WritePins(struct mpsse_context *mpsse, uint8_t data)
 	{
 		if(mpsse->mode == BITBANG)
 		{
-			if(ftdi_write_data(&mpsse->ftdi, &data, 1) == 0)
+			if(ftdi_write_data(mpsse->ftdi, &data, 1) == 0)
 			{
 				retval = MPSSE_OK;
 			}
@@ -1232,7 +1240,7 @@ int ReadPins(struct mpsse_context *mpsse)
 
 	if(is_valid_context(mpsse))
 	{
-		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, (unsigned char *) &val);
+		ftdi_read_pins(mpsse->ftdi, (unsigned char *) &val);
 	}
 
 	return (int) val;
@@ -1244,7 +1252,7 @@ int ReadPins(struct mpsse_context *mpsse)
  * @mpsse - MPSSE context pointer.
  * @pin   - The pin number.
  * @state - The state of the pins, as returned by ReadPins.
- *          If set to -1, ReadPins will automatically be called.
+ *			If set to -1, ReadPins will automatically be called.
  *
  * Returns a 1 if the pin is high, 0 if the pin is low.
  */

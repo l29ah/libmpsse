@@ -2,7 +2,6 @@
  * Example code of using the low-latency FastRead and FastWrite functions (SPI and C only).
  * Contrast to spiflash.c.
  */
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpsse.h>
@@ -17,16 +16,16 @@ int main(void)
 	char data[SIZE] = { 0 };
 	int retval = EXIT_FAILURE;
 	struct mpsse_context *flash = NULL;
-	
+
 	if((flash = MPSSE(SPI0, TWELVE_MHZ, MSB)) != NULL && flash->open)
 	{
 		printf("%s initialized at %dHz (SPI mode 0)\n", GetDescription(flash), GetClock(flash));
-		
+
 		Start(flash);
 		FastWrite(flash, RCMD, sizeof(RCMD) - 1);
 		FastRead(flash, data, SIZE);
 		Stop(flash);
-		
+
 		if(data)
 		{
 			fp = fopen(FOUT, "wb");
@@ -34,7 +33,7 @@ int main(void)
 			{
 				fwrite(data, 1, SIZE, fp);
 				fclose(fp);
-				
+
 				printf("Dumped %d bytes to %s\n", SIZE, FOUT);
 				retval = EXIT_SUCCESS;
 			}

@@ -9,6 +9,12 @@
 #include <string.h>
 
 #include "config.h"
+#if HAVE_LIBFTDI1 == 1
+#include <libftdi1/ftdi.h>
+#else
+#include <ftdi.h>
+#endif
+
 #include "mpsse.h"
 #include "support.h"
 
@@ -17,15 +23,15 @@
 /* Write data to the FTDI chip */
 int raw_write(struct mpsse_context *mpsse, unsigned char *buf, int size)
 {
-        int retval = MPSSE_FAIL;
+	int retval = MPSSE_FAIL;
 
-        if(mpsse->mode)
+	if(mpsse->mode)
 	{
-		if(ftdi_write_data(&mpsse->ftdi, buf, size) == size)
-        	{
-                	retval = MPSSE_OK;
+		if(ftdi_write_data(mpsse->ftdi, buf, size) == size)
+		{
+			retval = MPSSE_OK;
 		}
-        }
+	}
 
 	return retval;
 }
@@ -40,7 +46,7 @@ int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size)
 	{
 		while((n < size) && (retry -- > 0))
 		{
-			r = ftdi_read_data(&mpsse->ftdi, buf, size);
+			r = ftdi_read_data(mpsse->ftdi, buf, size);
 			if(r < 0) break;
 			n += r;
 		}
@@ -52,7 +58,7 @@ int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size)
 			 *
 			 * Is this needed anymore? It slows down repetitive read operations by ~8%.
 			 */
-			ftdi_usb_purge_rx_buffer(&mpsse->ftdi);
+			ftdi_usb_purge_rx_buffer(mpsse->ftdi);
 		}
 	}
 
@@ -64,8 +70,8 @@ void set_timeouts(struct mpsse_context *mpsse, int timeout)
 {
 	if(mpsse->mode)
         {
-                mpsse->ftdi.usb_read_timeout = timeout;
-                mpsse->ftdi.usb_write_timeout = timeout;
+                mpsse->ftdi->usb_read_timeout = timeout;
+                mpsse->ftdi->usb_write_timeout = timeout;
         }
 
 	return;
