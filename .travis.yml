@@ -4,6 +4,6 @@ compiler:
   - clang
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libftdi-dev swig
+  - sudo apt-get install -qq swig
 script:
-  - cd src && autoreconf --install && ./configure && scan-build make
+  - ./build.sh
