@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
+#include "mpsse_config.h"
 #include "mpsse.h"
 #include "support.h"
 

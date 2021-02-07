@@ -7,7 +7,19 @@ chips. Additionally, it provides control over the GPIO pins on the FTDI chips an
 bitbang mode as well. Based around the libftdi library, it is written in C and includes a Python wrapper 
 courtesy of swig.
 
-See [INSTALL](docs/INSTALL) for the installation instructions.
+# Install
+
+```bash
+./build.sh # libmpsse-static.a and its examples and headers will be generated and copied to current folder
+```
+
+# Use Library
+
+libmpsse requires linking to `pthreads` and `udev`.  You can compile an application by using the gcc example below:
+
+```bash
+gcc -o bitbang src/examples/bitbang.c -L. -I./src -lmpsse-static -lpthread -ludev
+```
 
 # LIBRARY API
 
@@ -44,7 +56,7 @@ libmpsse, the C examples can be built by running:
 There are more detailed descriptions of the SPI and I2C APIs in [README.SPI](docs/README.SPI) and [README.I2C](docs/README.I2C) files.
 
 # BUILDING APPLICATIONS
-	
+
 To build applications in Python, you must import the `mpsse` module:
 
     from mpsse import *

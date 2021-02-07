@@ -29,13 +29,11 @@ LT_INIT
 AC_ENABLE_SHARED
 AC_ENABLE_STATIC
 
-dnl Check to see if the libftdi1 headers have been installed
-AC_CHECK_HEADERS([libftdi1/ftdi.h], [LIBFTDI1=1],
-                 [AC_CHECK_HEADERS([ftdi.h],[LIBFTDI1=0],
-                                   [AC_MSG_ERROR([missing libftdi header files])])])
+AX_APPEND_FLAG([-L$ac_abs_confdir])
+AX_APPEND_FLAG([-I$ac_abs_confdir])
+AX_APPEND_FLAG([-D_GNU_SOURCE])
 
-AC_CHECK_LIB([ftdi1],[ftdi_init],[],
-             [AC_CHECK_LIB([ftdi],[ftdi_init],[],[AC_MSG_ERROR([missing libftdi library])],[])],[])
+LDFLAGS="-l:libftdi1-static.a -ludev -lpthread $LDFLAGS"
 
 AC_PATH_PROG([SWIG], [swig], [no])
 AM_PATH_PYTHON
@@ -70,5 +68,5 @@ AC_SUBST(PYTHON_INCLUDE)
 AC_SUBST(PYTHON_LIBS)
 AC_SUBST(LIBFTDI1)
 AC_CONFIG_FILES([Makefile examples/Makefile])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([mpsse_config.h])
 AC_OUTPUT
