@@ -31,6 +31,8 @@ AC_ENABLE_STATIC
 
 AX_APPEND_FLAG([-L$ac_abs_confdir])
 AX_APPEND_FLAG([-I$ac_abs_confdir])
+AX_APPEND_FLAG([-D_GNU_SOURCE])
+
 LDFLAGS="-l:libftdi1-static.a -ludev -lpthread $LDFLAGS"
 
 AC_PATH_PROG([SWIG], [swig], [no])
