@@ -175,11 +175,9 @@ static struct mpsse_context *OpenIndexInternal(int vid, int pid, enum modes mode
 					mpsse->xsize = SPI_RW_SIZE;
 				}
 
-				status |= ftdi_usb_reset(&mpsse->ftdi);
 				status |= ftdi_set_latency_timer(&mpsse->ftdi, LATENCY_MS);
 				status |= ftdi_write_data_set_chunksize(&mpsse->ftdi, CHUNK_SIZE);
 				status |= ftdi_read_data_set_chunksize(&mpsse->ftdi, CHUNK_SIZE);
-				status |= ftdi_set_bitmode(&mpsse->ftdi, 0, BITMODE_RESET);
 
 				if(status == 0)
 				{
@@ -239,7 +237,6 @@ void Close(struct mpsse_context *mpsse)
 	{
 		if(mpsse->open)
 		{
-			ftdi_set_bitmode(&mpsse->ftdi, 0, BITMODE_RESET);
 			ftdi_usb_close(&mpsse->ftdi);
 			ftdi_deinit(&mpsse->ftdi);
 		}
@@ -286,8 +283,7 @@ void EnableBitmode(struct mpsse_context *mpsse, int tf)
  */
 int SetMode(struct mpsse_context *mpsse, int endianess)
 {
-	int retval = MPSSE_OK, i = 0, setup_commands_size = 0;
-	unsigned char buf[CMD_SIZE] = { 0 };
+	int retval = MPSSE_OK, setup_commands_size = 0;
 	unsigned char setup_commands[CMD_SIZE*MAX_SETUP_COMMANDS] = { 0 };
 
 	/* Do not call is_valid_context() here, as the FTDI chip may not be completely configured when SetMode is called */
@@ -395,18 +391,16 @@ int SetMode(struct mpsse_context *mpsse, int endianess)
 
 		if(retval == MPSSE_OK)
 		{
-			/* Set the idle pin states */
-			set_bits_low(mpsse, mpsse->pidle);
+			uint8_t low_pins, high_pins;
+			if (get_bits_low(mpsse, &low_pins) != MPSSE_OK) low_pins = 0;
+			if (get_bits_high(mpsse, &high_pins) != MPSSE_OK) high_pins = 0;
 
-			/* All GPIO pins are outputs, set low */
+			mpsse->pstart = low_pins;
+			mpsse->gpioh = high_pins;
+
+			/* All GPIO pins are outputs */
+			mpsse->tris |= GPIO0 | GPIO1 | GPIO2 | GPIO3;
 			mpsse->trish = 0xFF;
-			mpsse->gpioh = 0x00;
-
-	                buf[i++] = SET_BITS_HIGH;
-	                buf[i++] = mpsse->gpioh;
-	                buf[i++] = mpsse->trish;
-
-			retval = raw_write(mpsse, buf, i);
 		}
 	}
 	else
